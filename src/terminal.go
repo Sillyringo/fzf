@@ -2,7 +2,9 @@ package fzf
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -1909,38 +1911,73 @@ func (t *Terminal) executeChangeQuery(template string) {
 	}
 	command := t.replacePlaceholder(template, false, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
-	var newQuerySB strings.Builder
 	t.executing.Set(true)
+
+	
 	cmd.Stdin = tui.TtyIn()
-	out, _ := cmd.StdoutPipe()
-	t.tui.Pause(false)
-	cmd.Stderr = cmd.Stdout
-	reader := bufio.NewReader(out)
+	// cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	// cmd.Stdin = cmd.Stdout
+	// os.Stdout = cmd.Stdout
+	
+	var buf bytes.Buffer
+	cmd.Stdout = io.MultiWriter(os.Stdout, &buf)
+
+	var newQuerySB strings.Builder
+	// out, _ := cmd.StdoutPipe()
+	
+	
+	
+	t.tui.Pause(true)
+	
+	// reader := bufio.NewReader(out)
 	err := cmd.Start()
 	if err != nil {
-		newQuerySB.WriteString(err.Error())
+		fmt.Println("2")
+		// newQuerySB.WriteString(err.Error())
 	} else {
-		for {
-			line, isPre, err := reader.ReadLine()
-			if err != nil {
-				break
-			}
-			newQuerySB.Write(line)
-			if !isPre {
-				newQuerySB.WriteByte('\n')
-			}
-		}
+		// for {
+			// line, isPre, err := reader.ReadLine()
+		fmt.Println("3")
+			// if err != nil {
+			// 	break
+			// }
+			
+		
+		
+			// fmt.Println("5")
+			// if !isPre {
+			// 	newQuerySB.WriteByte('\n')
+			// }
+		// }
 	}
 	err = cmd.Wait()
 	if err != nil {
+		fmt.Println("4")
 		newQuerySB.WriteString(err.Error())
 	}
-	t.tui.Resume(false, false)
+	// cmd.Run()
+	
+	t.tui.Resume(true, false)
+	
+	t.redraw(true)
+	t.refresh()
+	
+	
+	// fmt.Println("buf.String(): " + buf.String())
+	
+	newQuerySB.Write([]byte(buf.String()))
+	
+	
 	newQuery := newQuerySB.String()
+	// errorExit("newQuery: " + newQuery)
 	newQuery = strings.TrimSuffix(newQuery, "\n")
 	newQuery = strings.ReplaceAll(newQuery, "\n", " ")
 	t.input = []rune(newQuerySB.String())
 	t.cx = len(t.input)
+	
+	// fmt.Println("newQuerySB.String():" + newQuerySB.String())
+	
 	t.executing.Set(false)
 	cleanTemporaryFiles()
 }
