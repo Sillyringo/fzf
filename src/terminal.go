@@ -1912,71 +1912,38 @@ func (t *Terminal) executeChangeQuery(template string) {
 	command := t.replacePlaceholder(template, false, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
 	t.executing.Set(true)
-
-	
-	cmd.Stdin = tui.TtyIn()
-	// cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	// cmd.Stdin = cmd.Stdout
-	// os.Stdout = cmd.Stdout
 	
 	var buf bytes.Buffer
-	cmd.Stdout = io.MultiWriter(os.Stdout, &buf)
-
 	var newQuerySB strings.Builder
-	// out, _ := cmd.StdoutPipe()
 	
-	
+	cmd.Stdin = tui.TtyIn()
+	cmd.Stdout = io.MultiWriter(os.Stdout, &buf)
+	cmd.Stderr = os.Stderr
 	
 	t.tui.Pause(true)
-	
-	// reader := bufio.NewReader(out)
 	err := cmd.Start()
+
 	if err != nil {
-		fmt.Println("2")
-		// newQuerySB.WriteString(err.Error())
-	} else {
-		// for {
-			// line, isPre, err := reader.ReadLine()
-		fmt.Println("3")
-			// if err != nil {
-			// 	break
-			// }
-			
-		
-		
-			// fmt.Println("5")
-			// if !isPre {
-			// 	newQuerySB.WriteByte('\n')
-			// }
-		// }
+		newQuerySB.WriteString(err.Error())
 	}
 	err = cmd.Wait()
 	if err != nil {
-		fmt.Println("4")
 		newQuerySB.WriteString(err.Error())
 	}
-	// cmd.Run()
 	
 	t.tui.Resume(true, false)
 	
-	t.redraw(true)
-	t.refresh()
-	
-	
-	// fmt.Println("buf.String(): " + buf.String())
-	
 	newQuerySB.Write([]byte(buf.String()))
 	
-	
 	newQuery := newQuerySB.String()
-	// errorExit("newQuery: " + newQuery)
-	newQuery = strings.TrimSuffix(newQuery, "\n")
 	newQuery = strings.ReplaceAll(newQuery, "\n", " ")
-	t.input = []rune(newQuerySB.String())
+	newQuery = strings.TrimSuffix(newQuery, " ")
+	
+	t.input = []rune(newQuery)
 	t.cx = len(t.input)
 	
-	// fmt.Println("newQuerySB.String():" + newQuerySB.String())
+	t.redraw(true)
+	t.refresh()
 	
 	t.executing.Set(false)
 	cleanTemporaryFiles()
