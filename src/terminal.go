@@ -1921,16 +1921,8 @@ func (t *Terminal) executeChangeQuery(template string) {
 	cmd.Stderr = os.Stderr
 	
 	t.tui.Pause(true)
-	err := cmd.Start()
-
-	if err != nil {
-		newQuerySB.WriteString(err.Error())
-	}
-	err = cmd.Wait()
-	if err != nil {
-		newQuerySB.WriteString(err.Error())
-	}
-	
+	cmd.Start()
+	cmd.Wait()
 	t.tui.Resume(true, false)
 	
 	newQuerySB.Write([]byte(buf.String()))
